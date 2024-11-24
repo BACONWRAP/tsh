@@ -159,7 +159,42 @@ int main(int argc, char **argv) {
  * background children don't receive SIGINT (SIGTSTP) from the kernel
  * when we type ctrl-c (ctrl-z) at the keyboard.
  */
-void eval(char *cmdline) { return; }
+void eval(char *cmdline) {
+    char *argv[MAXARGS]; /* Argument list execve() */
+    char buf[MAXLINESZ]; /* Holds modified command line */
+    int bg;              /* Should the job run in bg or fg? */
+    pid_t pid;           /* Process id */
+    sigset_t mask;       /* Signal mask */
+
+    strcpy(buf, cmdline);
+    bg = parseline(buf, argv);
+    if (argv[0] == NULL) {
+        return;
+    }
+
+    if (!builtin_cmd(argv)) {
+        Sigemptyset(&mask);
+        Sigaddset(&mask, SIGCHLD);
+        Sigprocmask(SIG_BLOCK, &mask, NULL);
+
+        if ((pid = Fork()) == 0) {
+            Sigprocmask(SIG_UNBLOCK, &mask, NULL);
+            Setpgid(0, 0);
+            Execve(argv[0], argv, environ);
+        }
+
+        if (!bg) {
+            addjob(jobs, pid, FG, cmdline);
+            Sigprocmask(SIG_UNBLOCK, &mask, NULL);
+            waitfg(pid);
+        } else {
+            addjob(jobs, pid, BG, cmdline);
+            Sigprocmask(SIG_UNBLOCK, &mask, NULL);
+            printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
+        }
+    }
+    return;
+}
 
 /*
  * parseline - Parse the command line and build the argv array.
@@ -219,7 +254,17 @@ int parseline(const char *cmdline, char **argv) {
  * builtin_cmd - If the user has typed a built-in command then execute
  *    it immediately.
  */
-int builtin_cmd(char **argv) { return 0; /* not a builtin command */ }
+int builtin_cmd(char **argv) {
+    if (!strcmp(argv[0], "quit")) {
+        exit(0);
+    }
+    if (!strcmp(argv[0], "jobs")) {
+        listjobs(jobs);
+        return 1;
+    }
+
+    return 0; /* not a builtin command */
+}
 
 /*
  * do_bgfg - Execute the builtin bg and fg commands
