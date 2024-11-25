@@ -172,6 +172,9 @@ void eval(char *cmdline) {
         }
         if (!bg) {
             wait(NULL);
+        } else {
+            addjob(jobs, pid, BG, cmdline);
+            printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
         }
     }
 }
