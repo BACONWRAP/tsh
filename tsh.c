@@ -171,7 +171,7 @@ void eval(char *cmdline) {
             }
         }
         if (!bg) {
-            waitfg(pid);
+            wait(NULL);
         }
     }
 }
