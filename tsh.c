@@ -160,40 +160,27 @@ int main(int argc, char **argv) {
  * when we type ctrl-c (ctrl-z) at the keyboard.
  */
 void eval(char *cmdline) {
-    char *argv[MAXARGS]; /* Argument list execve() */
-    char buf[MAXLINESZ]; /* Holds modified command line */
-    int bg;              /* Should the job run in bg or fg? */
-    pid_t pid;           /* Process id */
-    sigset_t mask;       /* Signal mask */
-
-    strcpy(buf, cmdline);
-    bg = parseline(buf, argv);
-    if (argv[0] == NULL) {
-        return;
-    }
-
+    char *argv[MAXARGS];               /* Argument list execvp() */
+    int bg = parseline(cmdline, argv); /* Should the job run in bg or fg? */
     if (!builtin_cmd(argv)) {
-        Sigemptyset(&mask);
-        Sigaddset(&mask, SIGCHLD);
-        Sigprocmask(SIG_BLOCK, &mask, NULL);
-
+        pid_t pid;
         if ((pid = Fork()) == 0) {
-            Sigprocmask(SIG_UNBLOCK, &mask, NULL);
-            Setpgid(0, 0);
-            Execve(argv[0], argv, environ);
+            if (execvp(argv[0], argv) < 0) {
+                printf("%s: Command not found\n", argv[0]);
+                exit(0);
+            }
         }
-
         if (!bg) {
-            addjob(jobs, pid, FG, cmdline);
-            Sigprocmask(SIG_UNBLOCK, &mask, NULL);
             waitfg(pid);
+<<<<<<< HEAD
         } else {
             addjob(jobs, pid, BG, cmdline);
             Sigprocmask(SIG_UNBLOCK, &mask, NULL);
             printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
+=======
+>>>>>>> 91762f4 (trace03 test)
         }
     }
-    return;
 }
 
 /*
