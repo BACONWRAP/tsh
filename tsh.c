@@ -172,13 +172,6 @@ void eval(char *cmdline) {
         }
         if (!bg) {
             waitfg(pid);
-<<<<<<< HEAD
-        } else {
-            addjob(jobs, pid, BG, cmdline);
-            Sigprocmask(SIG_UNBLOCK, &mask, NULL);
-            printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-=======
->>>>>>> 91762f4 (trace03 test)
         }
     }
 }
